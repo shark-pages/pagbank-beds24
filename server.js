@@ -6,32 +6,44 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // 🔑 CONFIGURAÇÕES DO PAGBANK (SANDBOX)
-const PAGBANK_API = "https://sandbox.api.pagseguro.com/checkout";
-const PAGBANK_TOKEN = "SEU_TOKEN_SANDBOX_AQUI"; // substitua pela sua chave sandbox
+const PAGBANK_API = "https://sandbox.api.pagseguro.com/checkout"; // URL Sandbox
+const PAGBANK_TOKEN = "b6940cc1-4d79-443c-9d99-de7682afc434a8e978924133859309408537c3baae20984e-f51c-4cdc-8332-f0264b626f1d"; // Substitua pelo seu token sandbox do PagBank
 
-// ✅ Endpoint que o Beds24 vai chamar
+// 🔐 CONFIGURAÇÃO DO BEDS24 KEY
+const BEDS24_KEY = "canario24key123"; // Key que será usada no Beds24
+
+// ===============================
+// ✅ Endpoint principal (/gateway)
+// Recebe dados do Beds24 e cria checkout no PagBank
+// ===============================
 app.post("/gateway", async (req, res) => {
   try {
-    const { amount, currency, bookingid, customer_email } = req.body;
+    const { amount, currency, bookingid, customer_email, key } = req.body;
+
+    // 🔑 Verificação da Key enviada pelo Beds24
+    if (!key || key !== BEDS24_KEY) {
+      return res.status(403).json({ success: false, message: "Key inválida" });
+    }
 
     console.log("📩 Dados recebidos do Beds24:", req.body);
 
-    // Cria o checkout PagBank
+    // 🔹 Corpo do checkout PagBank
     const checkoutBody = {
       reference_id: bookingid,
       description: "Reserva Beds24",
       amount: {
-        value: Math.round(parseFloat(amount) * 100),
+        value: Math.round(parseFloat(amount) * 100), // PagBank usa centavos
         currency: currency || "BRL"
       },
       payment_method: {
         type: "CREDIT_CARD"
       },
       notification_urls: [
-        "https://seu-site.com/retorno_pagbank" // substitua pelo seu endpoint real
+        "https://pagbank-beds24.onrender.com/retorno_pagbank" // Webhook para notificações
       ]
     };
 
+    // 🔹 Chamada à API PagBank
     const response = await fetch(PAGBANK_API, {
       method: "POST",
       headers: {
@@ -45,7 +57,7 @@ app.post("/gateway", async (req, res) => {
 
     console.log("📦 Resposta PagBank:", data);
 
-    // Responde ao Beds24 com a URL de pagamento
+    // 🔹 Extrai link de pagamento do PagBank
     const paymentLink =
       data.links?.find(l => l.rel === "PAY")?.href || null;
 
@@ -53,6 +65,7 @@ app.post("/gateway", async (req, res) => {
       return res.json({ success: false, message: "Erro ao gerar link PagBank" });
     }
 
+    // 🔹 Retorna link para o Beds24
     res.json({
       success: true,
       redirect_url: paymentLink
@@ -64,9 +77,13 @@ app.post("/gateway", async (req, res) => {
   }
 });
 
-// ✅ Webhook de retorno PagBank (opcional)
+// ===============================
+// ✅ Webhook de retorno do PagBank (/retorno_pagbank)
+// Recebe notificações de pagamentos
+// ===============================
 app.post("/retorno_pagbank", (req, res) => {
-  console.log("🔔 Notificação PagBank:", req.body);
+  console.log("🔔 Notificação PagBank recebida:", req.body);
+  // Aqui você pode adicionar lógica para atualizar status de reservas, enviar e-mails, etc.
   res.sendStatus(200);
 });
 
