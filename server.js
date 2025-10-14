@@ -6,8 +6,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // 🔑 CONFIGURAÇÕES DO PAGBANK (SANDBOX)
-const PAGBANK_API = "https://sandbox.api.pagseguro.com/checkouts"; // URL Sandbox
-const PAGBANK_TOKEN = "b6940cc1-4d79-443c-9d99-de7682afc434a8e978924133859309408537c3baae20984e-f51c-4cdc-8332-f0264b626f1d"; // Substitua pelo seu token sandbox do PagBank
+const PAGBANK_API = "https://sandbox.api.pagseguro.com/checkouts"; // endpoint sandbox correto
+const PAGBANK_TOKEN = "b6940cc1-4d79-443c-9d99-de7682afc434a8e978924133859309408537c3baae20984e-f51c-4cdc-8332-f0264b626f1d"; // substitua pelo seu token sandbox real
 
 // 🔐 CONFIGURAÇÃO DO BEDS24 KEY
 const BEDS24_KEY = "canario24key123"; // Key que será usada no Beds24
@@ -32,7 +32,7 @@ app.post("/gateway", async (req, res) => {
       reference_id: bookingid,
       description: "Reserva Beds24",
       amount: {
-        value: Math.round(parseFloat(amount) * 100), // PagBank usa centavos
+        value: Math.round(parseFloat(amount) * 100), // R$100,00 = 10000 centavos
         currency: currency || "BRL"
       },
       payment_method: {
@@ -53,15 +53,22 @@ app.post("/gateway", async (req, res) => {
       body: JSON.stringify(checkoutBody)
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    console.log("📦 Resposta bruta PagBank:", text);
 
-    console.log("📦 Resposta PagBank:", data);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error("❌ Falha ao parsear JSON:", err);
+      return res.json({ success: false, message: "Erro ao processar resposta PagBank" });
+    }
 
     // 🔹 Extrai link de pagamento do PagBank
-    const paymentLink =
-      data.links?.find(l => l.rel === "PAY")?.href || null;
+    const paymentLink = data.links?.find(l => l.rel === "PAY")?.href || null;
 
     if (!paymentLink) {
+      console.error("❌ Link de pagamento não encontrado na resposta:", data);
       return res.json({ success: false, message: "Erro ao gerar link PagBank" });
     }
 
@@ -83,7 +90,7 @@ app.post("/gateway", async (req, res) => {
 // ===============================
 app.post("/retorno_pagbank", (req, res) => {
   console.log("🔔 Notificação PagBank recebida:", req.body);
-  // Aqui você pode adicionar lógica para atualizar status de reservas, enviar e-mails, etc.
+  // Aqui você pode atualizar status de reservas, enviar e-mails, etc.
   res.sendStatus(200);
 });
 
@@ -98,4 +105,5 @@ app.get("/gateway", (req, res) => {
 // Porta padrão Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+
 
