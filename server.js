@@ -6,7 +6,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // 🔑 CONFIGURAÇÕES DO PAGBANK (SANDBOX)
-const PAGBANK_API = "https://sandbox.api.pagseguro.com"; // URL Sandbox
+const PAGBANK_API = "https://sandbox.api.pagseguro.com/checkouts"; // URL Sandbox
 const PAGBANK_TOKEN = "b6940cc1-4d79-443c-9d99-de7682afc434a8e978924133859309408537c3baae20984e-f51c-4cdc-8332-f0264b626f1d"; // Substitua pelo seu token sandbox do PagBank
 
 // 🔐 CONFIGURAÇÃO DO BEDS24 KEY
