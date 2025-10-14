@@ -29,19 +29,26 @@ app.post("/gateway", async (req, res) => {
 
     // 🔹 Corpo do checkout PagBank
     const checkoutBody = {
-      reference_id: bookingid,
-      description: "Reserva Beds24",
-      amount: {
-        value: Math.round(parseFloat(amount) * 100), // R$100,00 = 10000 centavos
-        currency: currency || "BRL"
-      },
-      payment_method: {
-        type: "CREDIT_CARD"
-      },
-      notification_urls: [
-        "https://pagbank-beds24.onrender.com/retorno_pagbank" // Webhook para notificações
-      ]
-    };
+  reference_id: bookingid,
+  description: "Reserva Beds24",
+  amount: {
+    value: Math.round(parseFloat(amount) * 100), // R$100,00 = 10000 centavos
+    currency: currency || "BRL"
+  },
+  payment_method: {
+    type: "CREDIT_CARD"
+  },
+  items: [
+    {
+      name: "Reserva Beds24",
+      quantity: 1,
+      unit_amount: Math.round(parseFloat(amount) * 100)
+    }
+  ],
+  notification_urls: [
+    "https://pagbank-beds24.onrender.com/retorno_pagbank"
+  ]
+};
 
     // 🔹 Chamada à API PagBank
     const response = await fetch(PAGBANK_API, {
