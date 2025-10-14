@@ -13,7 +13,7 @@ const PAGBANK_TOKEN = "b6940cc1-4d79-443c-9d99-de7682afc434a8e978924133859309408
 const BEDS24_KEY = "canario24key123"; // Key que será usada no Beds24
 
 // ===============================
-// ✅ Endpoint principal (/gateway)
+// ✅ Endpoint principal (/gateway) - POST
 // Recebe dados do Beds24 e cria checkout no PagBank
 // ===============================
 app.post("/gateway", async (req, res) => {
@@ -87,6 +87,15 @@ app.post("/retorno_pagbank", (req, res) => {
   res.sendStatus(200);
 });
 
+// ===============================
+// ✅ Endpoint GET de teste (/gateway)
+// Apenas para verificar se o servidor está ativo via navegador
+// ===============================
+app.get("/gateway", (req, res) => {
+  res.send("🚀 Servidor ativo! Endpoint /gateway funcionando.");
+});
+
 // Porta padrão Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+
